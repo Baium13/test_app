@@ -1,10 +1,20 @@
-def add_two_numbers(x, y):
-    return x + y
+import requests
 
+url = 'http://127.0.0.1:5000/login'
 
-def mult(x, y):
-    return x * y
+data = {
+    'username': 'Volodymyr',
+    'password': '123456789'
+}
 
+headers = {
+    'Content-type': 'application/json',
+    'Accept': 'application/json'
+}
+response = requests.post(url, headers=headers, json=data)
 
-print(add_two_numbers(1, 2))
-print(mult(1, 4))
+if response.status_code == 200:
+    print("POST запрос успешный")
+    print("Контент запроса:", response.text)
+else:
+    print("POST ошибка запроса статус кода:", response.status_code)
