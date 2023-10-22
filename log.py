@@ -2,13 +2,13 @@ import json
 
 from flask import Flask, request, jsonify
 
-log = Flask(__name__)
+app = Flask(__name__)
 
 with open('login.jason') as f:
     users = json.load(f)
 
 
-@log.route('/login', methods=['POST'])
+@app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
 
@@ -26,4 +26,4 @@ def login():
 
 
 if __name__ == '__main__':
-    log.run()
+    app.run()
