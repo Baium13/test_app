@@ -1,0 +1,38 @@
+[
+  {
+    "username": "Volodymyr",
+    "password": "123456789"
+  },
+  {
+    "username": "vova",
+    "password": "123",
+    "email": "adsd@sfsdf",
+    "first_name": "asf",
+    "last_name": "sf",
+    "date_of_birth": "2023-10-27"
+  },
+  {
+    "username": "vov2",
+    "password": "123",
+    "email": "dasd@asda",
+    "first_name": "asd",
+    "last_name": "asd",
+    "date_of_birth": "2023-10-27"
+  },
+  {
+    "username": "asda",
+    "password": "asd",
+    "email": "asda@sdas",
+    "first_name": "asd",
+    "last_name": "asd",
+    "date_of_birth": "2023-10-27"
+  },
+  {
+    "username": "asdasd",
+    "password": "asdasd",
+    "email": "asd@asdasdas",
+    "first_name": "asd",
+    "last_name": "asd",
+    "date_of_birth": "2023-10-27"
+  }
+]
