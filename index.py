@@ -13,6 +13,10 @@ headers = {
 }
 response = requests.post(url, headers=headers, json=data)
 
+session = requests.Session()
+session.post()
+session.get()
+
 if response.status_code == 200:
     print("POST запрос успешный")
     print("Контент запроса:", response.text)
