@@ -5,7 +5,7 @@ app = Flask(__name__)
 a = {'username': 'vova', 'islogin': True}
 b = '{"username":"vova", "islogin":true}'
 print(json.loads(b))
-
+from log import app
 @app.route("/")
 def hello():
     return "Hello, World!"
