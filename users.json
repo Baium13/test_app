@@ -34,5 +34,21 @@
     "first_name": "asd",
     "last_name": "asd",
     "date_of_birth": "2023-10-27"
+  },
+  {
+    "username": "asd",
+    "password": "asd",
+    "email": "asd@asd",
+    "first_name": "asd",
+    "last_name": "asd",
+    "date_of_birth": "2023-10-27"
+  },
+  {
+    "username": "Vova1",
+    "password": "123",
+    "email": "qweq@qweqw",
+    "first_name": "123wqe",
+    "last_name": "qweqwe",
+    "date_of_birth": "2023-11-02"
   }
 ]
