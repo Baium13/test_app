@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 
-from flask import Flask, request, jsonify, render_template, make_response, redirect, session
+from flask import Flask, request, jsonify, render_template, make_response, redirect
 
 app = Flask(__name__)
 app.secret_key = '1'
@@ -19,7 +19,6 @@ def read_users():
 
 @app.route('/login', methods=['POST'])
 def login():
-    read_users()
     response_type = "JSON"
     if request.form:
         data = request.form
@@ -83,6 +82,7 @@ def register():
     sessions.update({str(hash(username)): {"username": username, "login_date": datetime.now()}})
     resp = redirect("/welcome")
     resp.set_cookie("session", str(hash(username)), max_age=3600)
+    read_users()
     return resp
 
 
@@ -107,14 +107,18 @@ def welcome():
     return render_template("welcome.html", username=sessions[request.cookies["session"]]["username"])
 
 
-@app.route('/logout')
-def logout():
-    session.pop('username', None)
-    return render_template("login.html")
+@app.route('/logout', methods=['GET'])
+def get_logout():
+    resp = make_response(render_template("logout.html"))
+    resp.set_cookie("session", "", max_age=0)
+
+    return resp
 
 
 if __name__ == '__main__':
+    read_users()
     app.run()
+
 
 """
 Implement registration form with following fields:
