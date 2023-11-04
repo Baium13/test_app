@@ -1,4 +1,5 @@
 import json
+from datetime import timedelta
 
 from flask import Flask, render_template, request, redirect, url_for, session, make_response
 
@@ -76,7 +77,7 @@ def registration():
 @app.route('/register', methods=['GET'])
 def get_welcome_form_after_registration():
     if 'username' in session:
-        return redirect(url_for('welcome'))
+        return render_template('welcome.html')
     return render_template("registration_form.html")
 
 
@@ -84,13 +85,19 @@ def get_welcome_form_after_registration():
 def welcome():
     if 'username' in session:
         return render_template('welcome.html', username=session['username'])
-    return redirect(url_for('/login'))
+    return render_template('/login.html')
 
 
 @app.route('/logout', methods=['GET'])
 def logout():
     session.pop('username', None)
     return render_template('logout.html')
+
+
+@app.before_request
+def session_time():
+    session.permanent = True
+    app.permanent_session_lifetime = timedelta(hours=1)
 
 
 if __name__ == '__main__':
