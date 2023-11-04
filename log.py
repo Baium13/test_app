@@ -103,7 +103,7 @@ def get_register_form():
 @app.route('/welcome', methods=['GET'])
 def welcome():
     if request.cookies.get("session") not in sessions:
-        return redirect("/login")
+        return render_template("login.html")
     return render_template("welcome.html", username=sessions[request.cookies["session"]]["username"])
 
 
@@ -118,7 +118,6 @@ def get_logout():
 if __name__ == '__main__':
     read_users()
     app.run()
-
 
 """
 Implement registration form with following fields:
