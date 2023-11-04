@@ -1,7 +1,6 @@
 import json
 
-from flask import Flask
-from flask import render_template, request, redirect, url_for, session, make_response
+from flask import Flask, render_template, request, redirect, url_for, session, make_response
 
 app = Flask(__name__)
 app.secret_key = 'my_key'
@@ -22,8 +21,14 @@ def login(username, password):
         return False
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/', methods=['GET'])
+def web():
+    return render_template('web.html')
+
+
+@app.route('/login', methods=['GET', 'POST'])
 def login_form():
+    read_file()
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -65,7 +70,6 @@ def registration():
     session['username'] = username
     response = make_response(redirect(url_for('welcome')))
     response.set_cookie('username', username)
-    read_file()
     return response
 
 
@@ -80,7 +84,7 @@ def get_welcome_form_after_registration():
 def welcome():
     if 'username' in session:
         return render_template('welcome.html', username=session['username'])
-    return redirect(url_for('/'))
+    return redirect(url_for('/login'))
 
 
 @app.route('/logout', methods=['GET'])
@@ -90,5 +94,4 @@ def logout():
 
 
 if __name__ == '__main__':
-    read_file()
     app.run()
