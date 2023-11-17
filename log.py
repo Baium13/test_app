@@ -1,4 +1,4 @@
-import json
+import sqlite3 as sq
 from datetime import timedelta
 
 from flask import Flask, render_template, request, redirect, url_for, session, make_response
@@ -8,18 +8,19 @@ app.secret_key = 'my_key'
 all_users = {}
 
 
-def read_file():
-    with open('users.json') as f:
-        users = json.load(f)
-        for user in users:
-            all_users.update({user['username']: user['password']})
-
-
-def login(username, password):
-    if username in all_users and all_users[username] == password:
-        return True
-    else:
-        return False
+def created_db():
+    with sq.connect("myDB.db") as con:
+        cur = con.cursor()
+        cur.execute("""CREATE TABLE IF NOT EXISTS user_profile (
+        
+        user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT,
+        password TEXT,
+        email TEXT,
+        first_name TEXT,
+        last_name TEXT,
+        date_of_birth TEXT
+        )""")
 
 
 @app.route('/', methods=['GET'])
@@ -29,17 +30,18 @@ def web():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login_form():
-    read_file()
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-
-        if login(username, password):
-            session['username'] = username
-            return redirect(url_for('welcome'))
-        else:
-            return 'Login failed. Please try again.'
-
+        with sq.connect("myDB.db") as con:
+            cur = con.cursor()
+            data = cur.execute("SELECT username, password FROM user_profile WHERE username = ? AND password = ?",
+                               (username, password)).fetchone()
+            if data is not None:
+                session['username'] = username
+                return redirect(url_for('welcome'))
+            else:
+                return 'Login failed. Please try again.'
     if 'username' in session:
         return f'You are already logged in as {session["username"]}. <a href="/logout">Logout</a>'
 
@@ -55,19 +57,13 @@ def registration():
     last_name = request.form['last_name']
     date_of_birth = request.form['date_of_birth']
 
-    user_data = {
-        'username': username,
-        'password': password,
-        'email': email,
-        'first_name': first_name,
-        'last_name': last_name,
-        'date_of_birth': date_of_birth
-    }
-    with open("users.json", "r") as file:
-        data = json.load(file)
-        data.append(user_data)
-    with open("users.json", "w") as file:
-        json.dump(data, file, indent=2)
+    with sq.connect("myDB.db") as con:
+        cur = con.cursor()
+        cur.execute(
+            "INSERT INTO user_profile VALUES(NULL, :username, :password, "
+            ":email, :first_name, :last_name, :date_of_birth)",
+            (username, password, email, first_name, last_name, date_of_birth))
+
     session['username'] = username
     response = make_response(redirect(url_for('welcome')))
     response.set_cookie('username', username)
@@ -101,4 +97,5 @@ def session_time():
 
 
 if __name__ == '__main__':
+    created_db()
     app.run()
