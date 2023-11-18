@@ -5,14 +5,12 @@ from flask import Flask, render_template, request, redirect, url_for, session, m
 
 app = Flask(__name__)
 app.secret_key = 'my_key'
-all_users = {}
 
 
 def created_db():
     with sq.connect("myDB.db") as con:
         cur = con.cursor()
         cur.execute("""CREATE TABLE IF NOT EXISTS user_profile (
-        
         user_id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT,
         password TEXT,
@@ -44,7 +42,6 @@ def login_form():
                 return 'Login failed. Please try again.'
     if 'username' in session:
         return f'You are already logged in as {session["username"]}. <a href="/logout">Logout</a>'
-
     return render_template('login.html')
 
 
@@ -56,7 +53,6 @@ def registration():
     first_name = request.form['first_name']
     last_name = request.form['last_name']
     date_of_birth = request.form['date_of_birth']
-
     with sq.connect("myDB.db") as con:
         cur = con.cursor()
         cur.execute(
