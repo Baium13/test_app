@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Registration Form</title>
+    <title>Register</title>
 </head>
 <body>
 
@@ -26,6 +26,9 @@
         <input type="date" id="date_of_birth" name="date_of_birth" required><br><br>
 
         <input type="submit" value="Register">
+                {% if error %}
+        <p class="errors">{{ error }}</p>
+                {% endif %}
     </form>
 
 </body>

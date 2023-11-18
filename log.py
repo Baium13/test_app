@@ -1,135 +1,118 @@
-import json
-from datetime import datetime
+from datetime import timedelta
 
-from flask import Flask, request, jsonify, render_template, make_response, redirect
+import psycopg2
+from flask import Flask, render_template, request, redirect, url_for, session, make_response
 
 app = Flask(__name__)
-app.secret_key = '1'
-all_users = {}
-sessions = {}
+app.secret_key = 'my_key'
 
 
-def read_users():
-    with open('users.json') as f:
-        users = json.load(f)
+def sql_select(sql_query, *args):
+    conn = psycopg2.connect(dbname="test", user="postgres", password="postgres", host='localhost')
 
-        for user in users:
-            all_users.update({user['username']: user['password']})
+    # Open a cursor to perform database operations
+    cur = conn.cursor()
+    cur.execute(sql_query, args)
+    result = cur.fetchone()
+    cur.close()
+    conn.close()
+    return result
 
 
-@app.route('/login', methods=['POST'])
-def login():
-    response_type = "JSON"
-    if request.form:
-        data = request.form
-        response_type = "FORM"
-    else:
-        data = request.get_json()
-    response = None
-    if not data or 'username' not in data or 'password' not in data:
-        response = jsonify({'error': 'Login failed'}), 400
+def sql_update(sql_query, *args):
+    conn = psycopg2.connect(dbname="test", user="postgres", password="postgres", host='localhost')
+    cur = conn.cursor()
+    cur.execute(sql_query, args)
+    conn.commit()
+    cur.close()
+    conn.close()
 
-    username = data['username']
-    password = data['password']
 
-    try:
-        if all_users[username] == password:
-            response = jsonify({'message': 'Login successful OK'}), 200
-            sessions.update({str(hash(username)): {"username": username, "login_date": datetime.now()}})
-    except KeyError:
-        pass
-    if response is None:
-        response = jsonify({'error': 'Login failed'}), 401
-    if response_type == "JSON":
-        resp = make_response(response[0], response[1])
-        if response[1] == 200:
-            resp.set_cookie("session", str(hash(username)), max_age=3600)
-        return resp
-    if response[1] == 200:
-        error_message = "Login succeeded with code 200"
-    else:
-        error_message = f"Login failed with code {response[1]}"
-    if response[1] == 200:
-        resp = redirect("/welcome")
-        resp.set_cookie("session", str(hash(username)), max_age=3600)
-        return resp
-    return make_response(render_template("login.html", error=error_message), response[1])
+def created_db():
+    sql_update("""CREATE TABLE IF NOT EXISTS user_profile (
+        user_id SERIAL PRIMARY KEY,
+        username TEXT NOT NULL UNIQUE,
+        password TEXT,
+        email TEXT NOT NULL UNIQUE,
+        first_name TEXT,
+        last_name TEXT,
+        date_of_birth TEXT
+        )""")
+
+
+def get_user(username, email=None):
+    return sql_select('SELECT * FROM user_profile WHERE username = %s OR email = %s', username, email)
+
+
+@app.route('/', methods=['GET'])
+def web():
+    return render_template('web.html')
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login_form():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        data = get_user(username, password)
+        if data is not None and data[2] == password:
+            session['username'] = username
+            return redirect(url_for('welcome'))
+        else:
+            return render_template('login.html', error='Login failed. Please try again.')
+    if 'username' in session:
+        return f'You are already logged in as {session["username"]}. <a href="/logout">Logout</a>'
+    return render_template('login.html')
 
 
 @app.route('/register', methods=['POST'])
-def register():
+def registration():
     username = request.form['username']
     password = request.form['password']
     email = request.form['email']
     first_name = request.form['first_name']
     last_name = request.form['last_name']
     date_of_birth = request.form['date_of_birth']
-    user_data = {
-        'username': username,
-        'password': password,
-        'email': email,
-        'first_name': first_name,
-        'last_name': last_name,
-        'date_of_birth': date_of_birth
-    }
+    data = get_user(username, email)
+    if data:
+        return render_template('registration_form.html', error='This username or email already used')
+    sql_update("INSERT INTO user_profile (username, password, "
+               "email, first_name, last_name, date_of_birth) VALUES (%s, %s, %s, %s, %s, %s)", username, password,
+               email, first_name,
+               last_name, date_of_birth)
 
-    with open("users.json", "r") as file:
-        data = json.load(file)
-        data.append(user_data)
-    with open("users.json", "w") as file:
-        json.dump(data, file, indent=2)
-
-    sessions.update({str(hash(username)): {"username": username, "login_date": datetime.now()}})
-    resp = redirect("/welcome")
-    resp.set_cookie("session", str(hash(username)), max_age=3600)
-    read_users()
-    return resp
-
-
-@app.route('/login', methods=['GET'])
-def get_login_form():
-    if request.cookies.get("session") in sessions:
-        return redirect("/welcome")
-    return render_template('login.html')
+    session['username'] = username
+    response = make_response(redirect(url_for('welcome')))
+    response.set_cookie('username', username)
+    return response
 
 
 @app.route('/register', methods=['GET'])
-def get_register_form():
-    if request.cookies.get("session") in sessions:
-        return redirect("/welcome")
+def get_welcome_form_after_registration():
+    if 'username' in session:
+        return render_template('welcome.html')
     return render_template("registration_form.html")
 
 
 @app.route('/welcome', methods=['GET'])
 def welcome():
-    if request.cookies.get("session") not in sessions:
-        return redirect("/login")
-    return render_template("welcome.html", username=sessions[request.cookies["session"]]["username"])
+    if 'username' in session:
+        return render_template('welcome.html', username=session['username'])
+    return render_template('/login.html')
 
 
 @app.route('/logout', methods=['GET'])
-def get_logout():
-    resp = make_response(render_template("logout.html"))
-    resp.set_cookie("session", "", max_age=0)
+def logout():
+    session.pop('username', None)
+    return render_template('logout.html')
 
-    return resp
+
+@app.before_request
+def session_time():
+    session.permanent = True
+    app.permanent_session_lifetime = timedelta(hours=1)
 
 
 if __name__ == '__main__':
-    read_users()
+    created_db()
     app.run()
-
-
-"""
-Implement registration form with following fields:
-username:
-password:
-email:
-first name:
-last name:
-date fo birth:
-
-After registration user must be logged in automatically and his credentials + data are stored in the file
-
-Implement logout button in welcome.html when you click it it will log you out.
-"""

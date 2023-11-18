@@ -1,0 +1,6 @@
+0 - use requrements.txt file for managmend dependens
+1 - sqlalchemy conecnt to postger
+2 - написать логіку створення постів
+3 - написат логіку перегляду спску постів
+3 - написати логіку редагування постів
+4 - почиати про OSI model
