@@ -1,47 +1,24 @@
 from datetime import timedelta
-
-import psycopg2
+from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, render_template, request, redirect, url_for, session, make_response
+from sqlalchemy import select
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@localhost:5432/test'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = 'my_key'
 
-
-def sql_select(sql_query, *args):
-    conn = psycopg2.connect(dbname="test", user="postgres", password="postgres", host='localhost')
-
-    # Open a cursor to perform database operations
-    cur = conn.cursor()
-    cur.execute(sql_query, args)
-    result = cur.fetchone()
-    cur.close()
-    conn.close()
-    return result
+db = SQLAlchemy(app)
 
 
-def sql_update(sql_query, *args):
-    conn = psycopg2.connect(dbname="test", user="postgres", password="postgres", host='localhost')
-    cur = conn.cursor()
-    cur.execute(sql_query, args)
-    conn.commit()
-    cur.close()
-    conn.close()
-
-
-def created_db():
-    sql_update("""CREATE TABLE IF NOT EXISTS user_profile (
-        user_id SERIAL PRIMARY KEY,
-        username TEXT NOT NULL UNIQUE,
-        password TEXT,
-        email TEXT NOT NULL UNIQUE,
-        first_name TEXT,
-        last_name TEXT,
-        date_of_birth TEXT
-        )""")
-
-
-def get_user(username, email=None):
-    return sql_select('SELECT * FROM user_profile WHERE username = %s OR email = %s', username, email)
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password = db.Column(db.String(80))
+    first_name = db.Column(db.String(120))
+    last_name = db.Column(db.String(120))
+    date_of_birth = db.Column(db.String)
 
 
 @app.route('/', methods=['GET'])
@@ -54,8 +31,10 @@ def login_form():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        data = get_user(username, password)
-        if data is not None and data[2] == password:
+        users_data = db.session.execute(
+            select(User.username, User.password).where(User.username == username, User.password == password))
+        users = users_data.fetchone()
+        if users is not None:
             session['username'] = username
             return redirect(url_for('welcome'))
         else:
@@ -67,24 +46,25 @@ def login_form():
 
 @app.route('/register', methods=['POST'])
 def registration():
+    db.create_all()
     username = request.form['username']
     password = request.form['password']
     email = request.form['email']
     first_name = request.form['first_name']
     last_name = request.form['last_name']
     date_of_birth = request.form['date_of_birth']
-    data = get_user(username, email)
-    if data:
+    try:
+        new_user = (
+            User(username=username, password=password, email=email, first_name=first_name, last_name=last_name,
+                 date_of_birth=date_of_birth))
+        db.session.add(new_user)
+        db.session.commit()
+        session['username'] = username
+        response = make_response(redirect(url_for('welcome')))
+        response.set_cookie('username', username)
+        return response
+    except:
         return render_template('registration_form.html', error='This username or email already used')
-    sql_update("INSERT INTO user_profile (username, password, "
-               "email, first_name, last_name, date_of_birth) VALUES (%s, %s, %s, %s, %s, %s)", username, password,
-               email, first_name,
-               last_name, date_of_birth)
-
-    session['username'] = username
-    response = make_response(redirect(url_for('welcome')))
-    response.set_cookie('username', username)
-    return response
 
 
 @app.route('/register', methods=['GET'])
@@ -114,5 +94,4 @@ def session_time():
 
 
 if __name__ == '__main__':
-    created_db()
     app.run()
