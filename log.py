@@ -1,6 +1,7 @@
-from datetime import timedelta
-from flask_sqlalchemy import SQLAlchemy
+from datetime import timedelta, datetime
+
 from flask import Flask, render_template, request, redirect, url_for, session, make_response
+from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import select
 
 app = Flask(__name__)
@@ -20,10 +21,39 @@ class User(db.Model):
     last_name = db.Column(db.String(120))
     date_of_birth = db.Column(db.String)
 
+    def __repr__(self):
+        return f"<User {self.id}>"
+
+
+class Post(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(), unique=True, nullable=False)
+    body = db.Column(db.String())
+    data = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+
+    def __repr__(self):
+        return f"<post {self.id}>"
+
 
 @app.route('/', methods=['GET'])
 def web():
     return render_template('web.html')
+
+
+@app.route('/add_content', methods=['GET', 'POST'])
+def add_to_content():
+    if request.method == 'POST':
+        username = session['username']
+        id_user_now = select(User.id).where(User.username == username)
+        title = request.form.get('title')
+        body = request.form.get('body')
+        data = request.form.get('data')
+        new_post = (Post(title=title, body=body, data=data, user_id=id_user_now))
+        db.session.add(new_post)
+        db.session.commit()
+    return render_template('add_content.html')
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -94,4 +124,5 @@ def session_time():
 
 
 if __name__ == '__main__':
-    app.run()
+
+    app.run(debug=True)
