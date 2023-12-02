@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Content</title>
+</head>
+<body>
+    <h2>Add Content</h2>
+    <form method="POST" action="/add_content">
+
+        <label for="title">Title:</label>
+           <input  size="60" type="text" id="title" name="title" required><br><br>
+
+        <label for="body">Body:</label>
+            <input    size="100" style="width: 500px; height: 200px;" type="text" id="body" name="body" required><br><br>
+
+        <label for="date">Date:</label>
+        <input type="date" id="date" name="date" required><br><br>
+
+        <input type="submit" value="Submit">
+    </form>
+    <br>
+    <form method="GET" action="/content_list">
+        <input type="submit" value="Back to Content List">
+    </form>
+</body>
+</html>
